@@ -48,6 +48,7 @@ export default async function AgendaPage({
         notes: a.notes,
         patientName: a.patient.fullName,
         procedureName: a.procedureType.name,
+        procedureColor: a.procedureType.color,
       }))}
       blockedTimes={blockedTimes.map((b) => ({
         id: b.id,
@@ -60,6 +61,7 @@ export default async function AgendaPage({
         id: p.id,
         name: p.name,
         defaultDurationMinutes: p.defaultDurationMinutes,
+        color: p.color,
       }))}
       patients={patients.map((p) => ({ id: p.id, fullName: p.fullName }))}
     />

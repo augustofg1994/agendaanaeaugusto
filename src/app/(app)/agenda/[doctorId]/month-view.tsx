@@ -3,11 +3,25 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { PROCEDURE_COLORS, type ProcedureColorKey } from "@/lib/procedure-colors";
 import { startOfMonth, startOfWeek, addDays } from "@/lib/agenda-range";
 import { isSameDay } from "./grid-utils";
 import type { AppointmentItem } from "./types";
 
 const WEEKDAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
+const monthChipStatusStyles: Record<string, string> = {
+  COMPLETED: "bg-muted text-muted-foreground",
+  PENDING_CONFIRMATION: "bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-100",
+};
+
+function monthChipStyle(a: AppointmentItem) {
+  if (a.status === "SCHEDULED") {
+    const colorKey = a.procedureColor as ProcedureColorKey;
+    return PROCEDURE_COLORS[colorKey]?.block ?? PROCEDURE_COLORS.GRAY.block;
+  }
+  return monthChipStatusStyles[a.status] ?? "bg-primary/10 text-primary";
+}
 
 export function MonthView({
   date,
@@ -65,7 +79,10 @@ export function MonthView({
                       e.stopPropagation();
                       onAppointmentClick(a);
                     }}
-                    className="truncate rounded bg-primary/10 px-1 text-[0.65rem] text-primary hover:bg-primary/20"
+                    className={cn(
+                      "truncate rounded border px-1 text-[0.65rem] hover:brightness-95",
+                      monthChipStyle(a)
+                    )}
                   >
                     {format(new Date(a.startTime), "HH:mm")} {a.patientName}
                   </div>

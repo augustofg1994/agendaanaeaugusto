@@ -29,6 +29,15 @@ enum BlockedTimeType {
   OTHER
 }
 
+enum ProcedureColor {
+  GREEN
+  BLUE
+  ORANGE
+  PURPLE
+  PINK
+  GRAY
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -82,11 +91,12 @@ model Patient {
 }
 
 model ProcedureType {
-  id                     String  @id @default(cuid())
+  id                     String         @id @default(cuid())
   name                   String
   defaultDurationMinutes Int
   followUpDays           Int? // null = sem retorno automático sugerido
-  active                 Boolean @default(true)
+  active                 Boolean        @default(true)
+  color                  ProcedureColor @default(GRAY)
 
   doctors      ProcedureDoctor[]
   appointments Appointment[]

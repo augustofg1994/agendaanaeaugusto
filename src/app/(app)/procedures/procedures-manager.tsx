@@ -28,6 +28,8 @@ import {
   setProcedureTypeActive,
   updateProcedureType,
 } from "@/server/actions/procedures";
+import { PROCEDURE_COLORS, type ProcedureColorKey } from "@/lib/procedure-colors";
+import { cn } from "@/lib/utils";
 
 type ProcedureRow = {
   id: string;
@@ -35,6 +37,7 @@ type ProcedureRow = {
   defaultDurationMinutes: number;
   followUpDays: number | null;
   active: boolean;
+  color: string;
   doctorIds: string[];
   doctorNames: string[];
 };
@@ -106,7 +109,17 @@ function ProcedureRowItem({
 
   return (
     <TableRow>
-      <TableCell className="py-3 pl-4 font-medium">{procedure.name}</TableCell>
+      <TableCell className="py-3 pl-4 font-medium">
+        <span className="flex items-center gap-2">
+          <span
+            className={cn(
+              "size-3 shrink-0 rounded-full",
+              PROCEDURE_COLORS[procedure.color as ProcedureColorKey]?.swatch ?? PROCEDURE_COLORS.GRAY.swatch
+            )}
+          />
+          {procedure.name}
+        </span>
+      </TableCell>
       <TableCell>{procedure.defaultDurationMinutes} min</TableCell>
       <TableCell>{procedure.followUpDays ? `${procedure.followUpDays} dias` : "—"}</TableCell>
       <TableCell>{procedure.doctorNames.join(", ")}</TableCell>
@@ -140,6 +153,9 @@ function ProcedureDialog({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>(procedure?.doctorIds ?? []);
+  const [color, setColor] = useState<ProcedureColorKey>(
+    (procedure?.color as ProcedureColorKey) ?? "GRAY"
+  );
 
   function toggleDoctor(id: string) {
     setSelectedDoctors((prev) => (prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]));
@@ -153,6 +169,7 @@ function ProcedureDialog({
       name: formData.get("name"),
       defaultDurationMinutes: formData.get("defaultDurationMinutes"),
       followUpDays: formData.get("followUpDays"),
+      color,
       doctorIds: selectedDoctors,
     };
 
@@ -217,6 +234,26 @@ function ProcedureDialog({
                   max={365}
                   defaultValue={procedure?.followUpDays ?? ""}
                 />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Cor na agenda</Label>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(PROCEDURE_COLORS) as ProcedureColorKey[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    title={PROCEDURE_COLORS[key].label}
+                    onClick={() => setColor(key)}
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-full ring-offset-2 ring-offset-background transition-shadow",
+                      PROCEDURE_COLORS[key].swatch,
+                      color === key ? "ring-2 ring-foreground" : "hover:ring-2 hover:ring-muted-foreground/40"
+                    )}
+                  >
+                    <span className="sr-only">{PROCEDURE_COLORS[key].label}</span>
+                  </button>
+                ))}
               </div>
             </div>
             <div className="space-y-2">

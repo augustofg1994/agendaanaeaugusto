@@ -16,6 +16,7 @@ export default async function ProceduresPage() {
     defaultDurationMinutes: p.defaultDurationMinutes,
     followUpDays: p.followUpDays,
     active: p.active,
+    color: p.color,
     doctorIds: p.doctors.map((d) => d.doctorId),
     doctorNames: p.doctors.map((d) => d.doctor.name),
   }));

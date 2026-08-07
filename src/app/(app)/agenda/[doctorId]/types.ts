@@ -6,6 +6,7 @@ export type AppointmentItem = {
   notes: string | null;
   patientName: string;
   procedureName: string;
+  procedureColor: string;
 };
 
 export type BlockedTimeItem = {
@@ -20,6 +21,7 @@ export type ProcedureOption = {
   id: string;
   name: string;
   defaultDurationMinutes: number;
+  color: string;
 };
 
 export type PatientOption = {

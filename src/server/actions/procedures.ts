@@ -23,6 +23,7 @@ export async function createProcedureType(input: unknown): Promise<ActionResult>
         name: data.name,
         defaultDurationMinutes: data.defaultDurationMinutes,
         followUpDays: data.followUpDays,
+        color: data.color,
         doctors: { create: data.doctorIds.map((doctorId) => ({ doctorId })) },
       },
     });
@@ -48,6 +49,7 @@ export async function updateProcedureType(procedureTypeId: string, input: unknow
           name: data.name,
           defaultDurationMinutes: data.defaultDurationMinutes,
           followUpDays: data.followUpDays,
+          color: data.color,
         },
       }),
       prisma.procedureDoctor.deleteMany({ where: { procedureTypeId } }),

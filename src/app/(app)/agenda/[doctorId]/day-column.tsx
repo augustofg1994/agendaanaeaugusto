@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PROCEDURE_COLORS, type ProcedureColorKey } from "@/lib/procedure-colors";
 import {
   GRID_HEIGHT,
   HOURS_RANGE,
@@ -14,13 +15,21 @@ import {
 import type { AppointmentItem, BlockedTimeItem } from "./types";
 
 const statusStyles: Record<string, string> = {
-  SCHEDULED: "bg-blue-50 border-blue-300 text-blue-950 dark:bg-blue-500/15 dark:border-blue-500/40 dark:text-blue-100",
   COMPLETED: "bg-muted border-border text-muted-foreground",
   PENDING_CONFIRMATION:
     "bg-amber-50 border-amber-300 text-amber-950 dark:bg-amber-500/15 dark:border-amber-500/40 dark:text-amber-100",
   CANCELLED:
     "bg-transparent border-dashed border-muted-foreground/30 text-muted-foreground line-through",
 };
+
+/** SCHEDULED usa a cor do procedimento; os demais status têm sua própria cor fixa (ver statusStyles). */
+function appointmentBlockStyle(a: AppointmentItem) {
+  if (a.status === "SCHEDULED") {
+    const colorKey = a.procedureColor as ProcedureColorKey;
+    return PROCEDURE_COLORS[colorKey]?.block ?? PROCEDURE_COLORS.GRAY.block;
+  }
+  return statusStyles[a.status] ?? "bg-secondary";
+}
 
 /** Abaixo desse tamanho de arraste, tratamos como um clique simples (seleção de um único horário). */
 const DRAG_THRESHOLD_MINUTES = 15;
@@ -153,7 +162,7 @@ export function DayColumn({
             }}
             className={cn(
               "absolute left-0.5 right-0.5 overflow-hidden rounded-lg border px-1.5 py-1 text-left text-xs shadow-sm transition-shadow hover:shadow-md",
-              statusStyles[a.status] ?? "bg-secondary"
+              appointmentBlockStyle(a)
             )}
             style={{
               top: Math.max(pixelsFromDayStart(new Date(a.startTime)), 0),
