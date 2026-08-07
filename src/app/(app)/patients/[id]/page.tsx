@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { getPatientWithHistory } from "@/server/queries/patients";
 import { formatCpf } from "@/lib/cpf";
 import { formatDateOnlyBR } from "@/lib/date-only";
+import { getAuthSession } from "@/server/auth/session";
+import { getDoctorScope } from "@/server/auth/scope";
 import { AppointmentNotes } from "./appointment-notes";
+import { DeleteAppointmentButton } from "./delete-appointment-button";
 
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Agendada",
@@ -22,9 +25,17 @@ export default async function PatientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await getAuthSession();
+  if (!session) redirect("/login");
+
   const { id } = await params;
   const patient = await getPatientWithHistory(id);
   if (!patient) notFound();
+
+  const { doctors } = await getDoctorScope(session);
+  const manageableDoctorIds = new Set(
+    doctors.filter((d) => d.access === "MANAGE").map((d) => d.id)
+  );
 
   return (
     <div className="space-y-6">
@@ -94,6 +105,11 @@ export default async function PatientDetailPage({
                   </div>
                   <p className="text-sm text-muted-foreground">Médico: {appt.doctor.name}</p>
                   <AppointmentNotes appointmentId={appt.id} initialNotes={appt.notes ?? ""} />
+                  {manageableDoctorIds.has(appt.doctorId) && (
+                    <div className="flex justify-end border-t pt-2">
+                      <DeleteAppointmentButton appointmentId={appt.id} patientName={patient.fullName} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

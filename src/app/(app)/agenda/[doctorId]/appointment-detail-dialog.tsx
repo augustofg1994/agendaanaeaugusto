@@ -20,7 +20,6 @@ import {
   cancelAppointment,
   completeAppointment,
   confirmPendingAppointment,
-  deleteAppointment,
   rescheduleAppointment,
 } from "@/server/actions/appointments";
 import type { AppointmentItem } from "./types";
@@ -52,7 +51,7 @@ export function AppointmentDetailDialog({
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"view" | "reschedule" | "cancel" | "delete">("view");
+  const [mode, setMode] = useState<"view" | "reschedule" | "cancel">("view");
 
   const isActionable = appointment.status === "SCHEDULED" || appointment.status === "PENDING_CONFIRMATION";
 
@@ -94,19 +93,6 @@ export function AppointmentDetailDialog({
         return;
       }
       toast.success("Consulta concluída.");
-      onOpenChange(false);
-    });
-  }
-
-  function handleDelete() {
-    setError(null);
-    startTransition(async () => {
-      const result = await deleteAppointment(appointment.id);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      toast.success("Consulta excluída.");
       onOpenChange(false);
     });
   }
@@ -167,18 +153,6 @@ export function AppointmentDetailDialog({
                 )}
               </DialogFooter>
             )}
-            {canManage && (
-              <div className="flex justify-end border-t pt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setMode("delete")}
-                >
-                  Excluir atendimento
-                </Button>
-              </div>
-            )}
           </div>
         )}
 
@@ -222,25 +196,6 @@ export function AppointmentDetailDialog({
               </Button>
             </DialogFooter>
           </form>
-        )}
-
-        {mode === "delete" && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Isso remove o atendimento de <strong>{appointment.patientName}</strong>{" "}
-              permanentemente, incluindo do histórico do paciente. Essa ação não pode ser desfeita.
-              Se você só quer marcar como não realizado, prefira &ldquo;Cancelar consulta&rdquo;.
-            </p>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setMode("view")}>
-                Voltar
-              </Button>
-              <Button type="button" variant="destructive" onClick={handleDelete} disabled={isPending}>
-                {isPending ? "Excluindo..." : "Excluir permanentemente"}
-              </Button>
-            </DialogFooter>
-          </div>
         )}
       </DialogContent>
     </Dialog>
