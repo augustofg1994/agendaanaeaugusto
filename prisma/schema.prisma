@@ -1,0 +1,167 @@
+// Prisma schema — Sistema de Agendamento da Clínica
+// Documentação do modelo de dados: ver README.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  DOCTOR
+  SECRETARY
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  PENDING_CONFIRMATION
+}
+
+enum BlockedTimeType {
+  VACATION
+  LUNCH
+  UNAVAILABLE
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  isAdmin      Boolean  @default(false)
+  active       Boolean  @default(true)
+
+  // Preenchido somente quando role = SECRETARY: médico ao qual o secretário está vinculado.
+  linkedDoctorId String?
+  linkedDoctor   User?   @relation("DoctorSecretaries", fields: [linkedDoctorId], references: [id])
+  secretaries    User[]  @relation("DoctorSecretaries")
+
+  // Relevante somente quando role = DOCTOR
+  performableProcedures ProcedureDoctor[]
+  appointmentsAsDoctor  Appointment[]     @relation("DoctorAppointments")
+  blockedTimes          BlockedTime[]     @relation("DoctorBlockedTimes")
+
+  appointmentsCreated Appointment[]         @relation("AppointmentCreatedBy")
+  passwordResetTokens PasswordResetToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Patient {
+  id          String   @id @default(cuid())
+  fullName    String
+  cpf         String   @unique // normalizado (somente dígitos); checksum validado na aplicação
+  email       String
+  phone       String
+  dateOfBirth DateTime
+
+  addressStreet       String?
+  addressNumber       String?
+  addressComplement   String?
+  addressNeighborhood String?
+  addressCity         String?
+  addressState        String?
+  addressZipCode      String?
+
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fullName])
+}
+
+model ProcedureType {
+  id                     String  @id @default(cuid())
+  name                   String
+  defaultDurationMinutes Int
+  followUpDays           Int? // null = sem retorno automático sugerido
+  active                 Boolean @default(true)
+
+  doctors      ProcedureDoctor[]
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProcedureDoctor {
+  id              String        @id @default(cuid())
+  procedureTypeId String
+  doctorId        String
+  procedureType   ProcedureType @relation(fields: [procedureTypeId], references: [id], onDelete: Cascade)
+  doctor          User          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([procedureTypeId, doctorId])
+}
+
+model Appointment {
+  id              String        @id @default(cuid())
+  doctorId        String
+  doctor          User          @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  patientId       String
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  procedureTypeId String
+  procedureType   ProcedureType @relation(fields: [procedureTypeId], references: [id])
+
+  startTime DateTime
+  endTime   DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+  notes     String?           @db.Text
+
+  // Encadeamento de retorno: aponta para a consulta original que gerou esta sugestão de retorno.
+  followUpOfAppointmentId String?
+  followUpOf              Appointment?  @relation("FollowUpChain", fields: [followUpOfAppointmentId], references: [id])
+  followUps               Appointment[] @relation("FollowUpChain")
+
+  createdById String
+  createdBy   User   @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+
+  cancelledAt  DateTime?
+  cancelReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([doctorId, startTime])
+  @@index([patientId])
+  @@index([status])
+}
+
+model BlockedTime {
+  id       String @id @default(cuid())
+  doctorId String
+  doctor   User   @relation("DoctorBlockedTimes", fields: [doctorId], references: [id])
+
+  startTime DateTime
+  endTime   DateTime
+  type      BlockedTimeType @default(OTHER)
+  reason    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([doctorId, startTime])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // sha256 do token bruto; o token bruto só existe no link enviado por e-mail
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}

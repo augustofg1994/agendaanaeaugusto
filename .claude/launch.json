@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "clinica-dev",
+      "runtimeExecutable": "/Users/augusto/.nvm/versions/node/v24.19.0/bin/node",
+      "runtimeArgs": [
+        "/Users/augusto/.nvm/versions/node/v24.19.0/bin/npm",
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "env": {
+        "PATH": "/Users/augusto/.nvm/versions/node/v24.19.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      }
+    }
+  ]
+}
