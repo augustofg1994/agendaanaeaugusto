@@ -22,6 +22,7 @@ import {
   confirmPendingAppointment,
   rescheduleAppointment,
 } from "@/server/actions/appointments";
+import { localInputToISOString } from "@/lib/datetime-local";
 import type { AppointmentItem } from "./types";
 
 const statusLabel: Record<string, string> = {
@@ -60,7 +61,9 @@ export function AppointmentDetailDialog({
     setError(null);
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      const result = await rescheduleAppointment(appointment.id, { startTime: formData.get("startTime") });
+      const result = await rescheduleAppointment(appointment.id, {
+        startTime: localInputToISOString(formData.get("startTime")),
+      });
       if (!result.ok) {
         setError(result.error);
         return;

@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAppointment } from "@/server/actions/appointments";
+import { localInputToISOString } from "@/lib/datetime-local";
 import type { PatientOption, ProcedureOption } from "./types";
 
 function toDateTimeLocalValue(date: Date) {
@@ -65,7 +66,7 @@ export function AppointmentFormDialog({
       doctorId,
       patientId,
       procedureTypeId,
-      startTime: formData.get("startTime"),
+      startTime: localInputToISOString(formData.get("startTime")),
       notes: formData.get("notes"),
     };
 

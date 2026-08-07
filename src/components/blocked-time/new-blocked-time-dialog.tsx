@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createBlockedTime } from "@/server/actions/blocked-time";
+import { localDateAndTimeToISOString, localInputToISOString } from "@/lib/datetime-local";
 
 export const blockedTimeTypeLabel: Record<string, string> = {
   VACATION: "Férias",
@@ -80,15 +81,15 @@ export function NewBlockedTimeDialog({
     const payload = fullDay
       ? {
           doctorId,
-          startTime: `${formData.get("fullDayDate")}T08:00`,
-          endTime: `${formData.get("fullDayDate")}T20:00`,
+          startTime: localDateAndTimeToISOString(formData.get("fullDayDate"), 8, 0),
+          endTime: localDateAndTimeToISOString(formData.get("fullDayDate"), 20, 0),
           type,
           reason: formData.get("reason"),
         }
       : {
           doctorId,
-          startTime: formData.get("startTime"),
-          endTime: formData.get("endTime"),
+          startTime: localInputToISOString(formData.get("startTime")),
+          endTime: localInputToISOString(formData.get("endTime")),
           type,
           reason: formData.get("reason"),
         };
