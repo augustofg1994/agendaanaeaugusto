@@ -58,6 +58,7 @@ export function AgendaBoard({
   const [detailAppointment, setDetailAppointment] = useState<AppointmentItem | null>(null);
   const [newAppointmentTime, setNewAppointmentTime] = useState<Date | null>(null);
   const [rangeSelection, setRangeSelection] = useState<{ start: Date; end: Date } | null>(null);
+  const [editingBlockedTime, setEditingBlockedTime] = useState<BlockedTimeItem | null>(null);
 
   function navigate(nextView: AgendaView, nextDate: Date, doctorId = selectedDoctorId) {
     router.push(`/agenda/${doctorId}?view=${nextView}&date=${formatDateParam(nextDate)}`);
@@ -164,6 +165,7 @@ export function AgendaBoard({
           onSlotClick={canManage ? (d) => setNewAppointmentTime(d) : undefined}
           onRangeSelect={canManage ? (start, end) => setRangeSelection({ start, end }) : undefined}
           onAppointmentClick={setDetailAppointment}
+          onBlockedTimeClick={canManage ? setEditingBlockedTime : undefined}
         />
       )}
       {view === "week" && (
@@ -174,6 +176,7 @@ export function AgendaBoard({
           onSlotClick={canManage ? (d) => setNewAppointmentTime(d) : undefined}
           onRangeSelect={canManage ? (start, end) => setRangeSelection({ start, end }) : undefined}
           onAppointmentClick={setDetailAppointment}
+          onBlockedTimeClick={canManage ? setEditingBlockedTime : undefined}
         />
       )}
       {view === "month" && (
@@ -211,6 +214,15 @@ export function AgendaBoard({
           defaultRange={rangeSelection}
           open={!!rangeSelection}
           onOpenChange={(open) => !open && setRangeSelection(null)}
+        />
+      )}
+
+      {editingBlockedTime && (
+        <NewBlockedTimeDialog
+          doctorId={selectedDoctorId}
+          blockedTime={editingBlockedTime}
+          open={!!editingBlockedTime}
+          onOpenChange={(open) => !open && setEditingBlockedTime(null)}
         />
       )}
     </div>

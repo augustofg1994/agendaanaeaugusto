@@ -12,6 +12,7 @@ export function DayView({
   onSlotClick,
   onRangeSelect,
   onAppointmentClick,
+  onBlockedTimeClick,
 }: {
   date: Date;
   appointments: AppointmentItem[];
@@ -19,6 +20,7 @@ export function DayView({
   onSlotClick?: (date: Date) => void;
   onRangeSelect?: (start: Date, end: Date) => void;
   onAppointmentClick: (appointment: AppointmentItem) => void;
+  onBlockedTimeClick?: (blockedTime: BlockedTimeItem) => void;
 }) {
   return (
     <div className="space-y-2">
@@ -34,6 +36,7 @@ export function DayView({
             onSlotClick={onSlotClick}
             onRangeSelect={onRangeSelect}
             onAppointmentClick={onAppointmentClick}
+            onBlockedTimeClick={onBlockedTimeClick}
             showHourLabels
           />
         </div>

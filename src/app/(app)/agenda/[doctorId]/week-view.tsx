@@ -15,6 +15,7 @@ export function WeekView({
   onSlotClick,
   onRangeSelect,
   onAppointmentClick,
+  onBlockedTimeClick,
 }: {
   date: Date;
   appointments: AppointmentItem[];
@@ -22,6 +23,7 @@ export function WeekView({
   onSlotClick?: (date: Date) => void;
   onRangeSelect?: (start: Date, end: Date) => void;
   onAppointmentClick: (appointment: AppointmentItem) => void;
+  onBlockedTimeClick?: (blockedTime: BlockedTimeItem) => void;
 }) {
   const start = startOfWeek(date);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
@@ -60,6 +62,7 @@ export function WeekView({
               onSlotClick={onSlotClick}
               onRangeSelect={onRangeSelect}
               onAppointmentClick={onAppointmentClick}
+              onBlockedTimeClick={onBlockedTimeClick}
             />
           </div>
         ))}

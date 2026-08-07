@@ -15,14 +15,26 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createBlockedTime } from "@/server/actions/blocked-time";
+import { createBlockedTime, deleteBlockedTime, updateBlockedTime } from "@/server/actions/blocked-time";
 import { localDateAndTimeToISOString, localInputToISOString } from "@/lib/datetime-local";
+import type { BlockedTimeItem } from "@/app/(app)/agenda/[doctorId]/types";
 
 export const blockedTimeTypeLabel: Record<string, string> = {
   VACATION: "Férias",
@@ -49,6 +61,7 @@ export function NewBlockedTimeDialog({
   doctorId,
   defaultDate,
   defaultRange,
+  blockedTime,
   trigger,
   open: controlledOpen,
   onOpenChange,
@@ -59,19 +72,23 @@ export function NewBlockedTimeDialog({
   defaultDate?: Date;
   /** Intervalo exato sugerido (ex: seleção por arraste na agenda) — abre com "dia todo" desmarcado. */
   defaultRange?: { start: Date; end: Date };
+  /** Quando informado, o diálogo abre em modo de edição (com opção de excluir) em vez de criação. */
+  blockedTime?: BlockedTimeItem;
   trigger?: ReactElement;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onCreated?: () => void;
 }) {
+  const isEditing = Boolean(blockedTime);
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
 
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [type, setType] = useState("UNAVAILABLE");
-  const [fullDay, setFullDay] = useState(Boolean(defaultDate) && !defaultRange);
+  const [type, setType] = useState(blockedTime?.type ?? "UNAVAILABLE");
+  const [fullDay, setFullDay] = useState(Boolean(defaultDate) && !defaultRange && !blockedTime);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -95,12 +112,28 @@ export function NewBlockedTimeDialog({
         };
 
     startTransition(async () => {
-      const result = await createBlockedTime(payload);
+      const result = isEditing
+        ? await updateBlockedTime(blockedTime!.id, payload)
+        : await createBlockedTime(payload);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      toast.success("Bloqueio criado.");
+      toast.success(isEditing ? "Bloqueio atualizado." : "Bloqueio criado.");
+      setOpen(false);
+      onCreated?.();
+    });
+  }
+
+  function handleDelete() {
+    if (!blockedTime) return;
+    startDeleteTransition(async () => {
+      const result = await deleteBlockedTime(blockedTime.id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Bloqueio excluído.");
       setOpen(false);
       onCreated?.();
     });
@@ -116,7 +149,7 @@ export function NewBlockedTimeDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Novo bloqueio de horário</DialogTitle>
+            <DialogTitle>{isEditing ? "Editar bloqueio de horário" : "Novo bloqueio de horário"}</DialogTitle>
             <DialogDescription>
               Consultas não poderão ser marcadas dentro deste intervalo.
             </DialogDescription>
@@ -170,7 +203,13 @@ export function NewBlockedTimeDialog({
                     id="startTime"
                     name="startTime"
                     type="datetime-local"
-                    defaultValue={defaultRange ? toDateTimeInputValue(defaultRange.start) : undefined}
+                    defaultValue={
+                      defaultRange
+                        ? toDateTimeInputValue(defaultRange.start)
+                        : blockedTime
+                          ? toDateTimeInputValue(new Date(blockedTime.startTime))
+                          : undefined
+                    }
                     required
                   />
                 </div>
@@ -180,7 +219,13 @@ export function NewBlockedTimeDialog({
                     id="endTime"
                     name="endTime"
                     type="datetime-local"
-                    defaultValue={defaultRange ? toDateTimeInputValue(defaultRange.end) : undefined}
+                    defaultValue={
+                      defaultRange
+                        ? toDateTimeInputValue(defaultRange.end)
+                        : blockedTime
+                          ? toDateTimeInputValue(new Date(blockedTime.endTime))
+                          : undefined
+                    }
                     required
                   />
                 </div>
@@ -188,13 +233,47 @@ export function NewBlockedTimeDialog({
             )}
             <div className="space-y-2">
               <Label htmlFor="reason">Motivo (opcional)</Label>
-              <Input id="reason" name="reason" />
+              <Input id="reason" name="reason" defaultValue={blockedTime?.reason ?? undefined} />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
-          <DialogFooter>
+          <DialogFooter className={isEditing ? "sm:justify-between" : undefined}>
+            {isEditing && (
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      Excluir bloqueio
+                    </Button>
+                  }
+                />
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir este bloqueio?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      O horário voltará a ficar disponível para consultas. Essa ação não pode ser
+                      desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Voltar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Excluindo..." : "Excluir permanentemente"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando..." : "Criar bloqueio"}
+              {isPending ? "Salvando..." : isEditing ? "Salvar alterações" : "Criar bloqueio"}
             </Button>
           </DialogFooter>
         </form>

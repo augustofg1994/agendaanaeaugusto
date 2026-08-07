@@ -45,6 +45,7 @@ export function DayColumn({
   onSlotClick,
   onRangeSelect,
   onAppointmentClick,
+  onBlockedTimeClick,
   showHourLabels = false,
 }: {
   day: Date;
@@ -54,6 +55,7 @@ export function DayColumn({
   /** Chamado ao soltar o mouse após arrastar por um intervalo maior que um clique simples. */
   onRangeSelect?: (start: Date, end: Date) => void;
   onAppointmentClick: (appointment: AppointmentItem) => void;
+  onBlockedTimeClick?: (blockedTime: BlockedTimeItem) => void;
   showHourLabels?: boolean;
 }) {
   const dayAppointments = appointments.filter((a) => isSameDay(new Date(a.startTime), day));
@@ -137,7 +139,18 @@ export function DayColumn({
         {dayBlocked.map((b) => (
           <div
             key={b.id}
-            className="absolute left-0.5 right-0.5 flex items-start gap-1 overflow-hidden rounded-lg border border-dashed border-muted-foreground/30 bg-[repeating-linear-gradient(135deg,var(--muted)_0px,var(--muted)_6px,transparent_6px,transparent_12px)] px-1.5 py-1 text-[0.7rem] text-muted-foreground"
+            role={onBlockedTimeClick ? "button" : undefined}
+            tabIndex={onBlockedTimeClick ? 0 : undefined}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              if (!onBlockedTimeClick) return;
+              e.stopPropagation();
+              onBlockedTimeClick(b);
+            }}
+            className={cn(
+              "absolute left-0.5 right-0.5 flex items-start gap-1 overflow-hidden rounded-lg border border-dashed border-muted-foreground/30 bg-[repeating-linear-gradient(135deg,var(--muted)_0px,var(--muted)_6px,transparent_6px,transparent_12px)] px-1.5 py-1 text-left text-[0.7rem] text-muted-foreground",
+              onBlockedTimeClick && "cursor-pointer transition-shadow hover:shadow-md"
+            )}
             style={{
               top: Math.max(pixelsFromDayStart(new Date(b.startTime)), 0),
               height: durationPixels(new Date(b.startTime), new Date(b.endTime)),
