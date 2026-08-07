@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { PROCEDURE_COLORS, type ProcedureColorKey } from "@/lib/procedure-colors";
 import { startOfMonth, startOfWeek, addDays } from "@/lib/agenda-range";
 import { isSameDay } from "./grid-utils";
-import type { AppointmentItem } from "./types";
+import type { AppointmentItem, BlockedTimeItem } from "./types";
 
 const WEEKDAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
@@ -23,14 +23,26 @@ function monthChipStyle(a: AppointmentItem) {
   return monthChipStatusStyles[a.status] ?? "bg-primary/10 text-primary";
 }
 
+/** Considera "dia todo" um bloqueio que cobre do início ao fim do horário de atendimento (08h–20h). */
+function isFullDayBlocked(day: Date, blockedTimes: BlockedTimeItem[]) {
+  return blockedTimes.some((b) => {
+    const start = new Date(b.startTime);
+    if (!isSameDay(start, day)) return false;
+    const end = new Date(b.endTime);
+    return start.getHours() <= 8 && end.getHours() >= 20;
+  });
+}
+
 export function MonthView({
   date,
   appointments,
+  blockedTimes,
   onDayClick,
   onAppointmentClick,
 }: {
   date: Date;
   appointments: AppointmentItem[];
+  blockedTimes: BlockedTimeItem[];
   onDayClick: (date: Date) => void;
   onAppointmentClick: (appointment: AppointmentItem) => void;
 }) {
@@ -52,6 +64,7 @@ export function MonthView({
         {days.map((day) => {
           const dayAppointments = appointments.filter((a) => isSameDay(new Date(a.startTime), day));
           const inMonth = day.getMonth() === date.getMonth();
+          const fullDayBlocked = isFullDayBlocked(day, blockedTimes);
           return (
             <button
               key={day.toISOString()}
@@ -59,7 +72,8 @@ export function MonthView({
               onClick={() => onDayClick(day)}
               className={cn(
                 "flex min-h-24 flex-col gap-1 border-b border-r p-1.5 text-left align-top last:border-r-0",
-                !inMonth && "bg-muted/20 text-muted-foreground/50"
+                !inMonth && "bg-muted/20 text-muted-foreground/50",
+                fullDayBlocked && "bg-gray-700 text-gray-50 hover:bg-gray-600"
               )}
             >
               <span

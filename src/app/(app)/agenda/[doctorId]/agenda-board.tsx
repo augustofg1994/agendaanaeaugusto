@@ -183,6 +183,7 @@ export function AgendaBoard({
         <MonthView
           date={date}
           appointments={appointments}
+          blockedTimes={blockedTimes}
           onDayClick={(d) => navigate("day", d)}
           onAppointmentClick={setDetailAppointment}
         />
