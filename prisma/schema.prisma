@@ -36,6 +36,12 @@ enum ProcedureColor {
   PURPLE
   PINK
   GRAY
+  RED
+  YELLOW
+  TEAL
+  INDIGO
+  LIME
+  CYAN
 }
 
 model User {

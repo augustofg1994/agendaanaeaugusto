@@ -32,7 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createBlockedTime, deleteBlockedTime, updateBlockedTime } from "@/server/actions/blocked-time";
+import {
+  createBlockedTime,
+  createRecurringBlockedTime,
+  deleteBlockedTime,
+  updateBlockedTime,
+} from "@/server/actions/blocked-time";
 import { localDateAndTimeToISOString, localInputToISOString } from "@/lib/datetime-local";
 import type { BlockedTimeItem } from "@/app/(app)/agenda/[doctorId]/types";
 
@@ -41,6 +46,14 @@ export const blockedTimeTypeLabel: Record<string, string> = {
   LUNCH: "Almoço",
   UNAVAILABLE: "Indisponível",
   OTHER: "Outro",
+};
+
+/** "NONE" é só um valor local de UI — a action de repetição nunca recebe essa opção. */
+const recurrenceLabel: Record<string, string> = {
+  NONE: "Não repetir",
+  DAILY: "Diariamente",
+  WEEKLY: "Semanalmente",
+  BIWEEKLY: "A cada 15 dias",
 };
 
 function toDateInputValue(date: Date) {
@@ -89,6 +102,7 @@ export function NewBlockedTimeDialog({
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState(blockedTime?.type ?? "UNAVAILABLE");
   const [fullDay, setFullDay] = useState(Boolean(defaultDate) && !defaultRange && !blockedTime);
+  const [recurrence, setRecurrence] = useState("NONE");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -111,15 +125,25 @@ export function NewBlockedTimeDialog({
           reason: formData.get("reason"),
         };
 
+    const isRecurring = !isEditing && recurrence !== "NONE";
+
     startTransition(async () => {
-      const result = isEditing
-        ? await updateBlockedTime(blockedTime!.id, payload)
-        : await createBlockedTime(payload);
+      const result = isRecurring
+        ? await createRecurringBlockedTime({
+            ...payload,
+            recurrence,
+            until: localDateAndTimeToISOString(formData.get("until"), 23, 59),
+          })
+        : isEditing
+          ? await updateBlockedTime(blockedTime!.id, payload)
+          : await createBlockedTime(payload);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      toast.success(isEditing ? "Bloqueio atualizado." : "Bloqueio criado.");
+      toast.success(
+        isRecurring ? "Bloqueios recorrentes criados." : isEditing ? "Bloqueio atualizado." : "Bloqueio criado."
+      );
       setOpen(false);
       onCreated?.();
     });
@@ -235,6 +259,34 @@ export function NewBlockedTimeDialog({
               <Label htmlFor="reason">Motivo (opcional)</Label>
               <Input id="reason" name="reason" defaultValue={blockedTime?.reason ?? undefined} />
             </div>
+
+            {!isEditing && (
+              <div className="space-y-2 border-t pt-4">
+                <Label>Repetir</Label>
+                <Select
+                  items={recurrenceLabel}
+                  value={recurrence}
+                  onValueChange={(v) => v && setRecurrence(v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(recurrenceLabel).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {recurrence !== "NONE" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="until">Repetir até</Label>
+                    <Input id="until" name="until" type="date" required />
+                  </div>
+                )}
+              </div>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter className={isEditing ? "sm:justify-between" : undefined}>
@@ -273,7 +325,13 @@ export function NewBlockedTimeDialog({
               </AlertDialog>
             )}
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando..." : isEditing ? "Salvar alterações" : "Criar bloqueio"}
+              {isPending
+                ? "Salvando..."
+                : isEditing
+                  ? "Salvar alterações"
+                  : recurrence !== "NONE"
+                    ? "Criar bloqueios"
+                    : "Criar bloqueio"}
             </Button>
           </DialogFooter>
         </form>

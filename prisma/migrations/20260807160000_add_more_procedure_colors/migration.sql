@@ -1,0 +1,6 @@
+ALTER TYPE "ProcedureColor" ADD VALUE 'RED';
+ALTER TYPE "ProcedureColor" ADD VALUE 'YELLOW';
+ALTER TYPE "ProcedureColor" ADD VALUE 'TEAL';
+ALTER TYPE "ProcedureColor" ADD VALUE 'INDIGO';
+ALTER TYPE "ProcedureColor" ADD VALUE 'LIME';
+ALTER TYPE "ProcedureColor" ADD VALUE 'CYAN';

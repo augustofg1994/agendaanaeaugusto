@@ -1,6 +1,19 @@
 import { z } from "zod";
 
-export const procedureColorValues = ["GREEN", "BLUE", "ORANGE", "PURPLE", "PINK", "GRAY"] as const;
+export const procedureColorValues = [
+  "GREEN",
+  "BLUE",
+  "ORANGE",
+  "PURPLE",
+  "PINK",
+  "GRAY",
+  "RED",
+  "YELLOW",
+  "TEAL",
+  "INDIGO",
+  "LIME",
+  "CYAN",
+] as const;
 
 export const procedureTypeSchema = z.object({
   name: z.string().trim().min(2, "Informe o nome do procedimento."),

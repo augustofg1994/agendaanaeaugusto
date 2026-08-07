@@ -65,6 +65,32 @@ export async function updateProcedureType(procedureTypeId: string, input: unknow
   }
 }
 
+export async function deleteProcedureType(procedureTypeId: string): Promise<ActionResult> {
+  try {
+    const session = await getAuthSession();
+    assertIsAdmin(session);
+
+    const appointmentCount = await prisma.appointment.count({ where: { procedureTypeId } });
+    if (appointmentCount > 0) {
+      return {
+        ok: false,
+        error:
+          "Não é possível excluir: existem consultas usando este procedimento. Desative-o em vez de excluir.",
+      };
+    }
+
+    await prisma.$transaction([
+      prisma.procedureDoctor.deleteMany({ where: { procedureTypeId } }),
+      prisma.procedureType.delete({ where: { id: procedureTypeId } }),
+    ]);
+
+    revalidatePath("/procedures");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: actionErrorMessage(err, "Não foi possível excluir o procedimento.") };
+  }
+}
+
 export async function setProcedureTypeActive(procedureTypeId: string, active: boolean): Promise<ActionResult> {
   try {
     const session = await getAuthSession();

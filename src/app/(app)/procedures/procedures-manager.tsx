@@ -24,7 +24,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   createProcedureType,
+  deleteProcedureType,
   setProcedureTypeActive,
   updateProcedureType,
 } from "@/server/actions/procedures";
@@ -64,7 +76,7 @@ export function ProceduresManager({
       {procedures.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum procedimento cadastrado.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -98,12 +110,21 @@ function ProcedureRowItem({
   isAdmin: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   function handleToggleActive() {
     startTransition(async () => {
       const result = await setProcedureTypeActive(procedure.id, !procedure.active);
       if (!result.ok) toast.error(result.error);
       else toast.success(procedure.active ? "Procedimento desativado." : "Procedimento reativado.");
+    });
+  }
+
+  function handleDelete() {
+    startDeleteTransition(async () => {
+      const result = await deleteProcedureType(procedure.id);
+      if (!result.ok) toast.error(result.error);
+      else toast.success("Procedimento excluído.");
     });
   }
 
@@ -134,6 +155,38 @@ function ProcedureRowItem({
           <Button variant="outline" size="sm" disabled={isPending} onClick={handleToggleActive}>
             {procedure.active ? "Desativar" : "Reativar"}
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  Excluir
+                </Button>
+              }
+            />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir "{procedure.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Essa ação não pode ser desfeita. Se já existirem consultas com este procedimento, a
+                  exclusão será bloqueada — nesse caso, use "Desativar" em vez de excluir.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Excluindo..." : "Excluir permanentemente"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TableCell>
       )}
     </TableRow>

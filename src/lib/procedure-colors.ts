@@ -35,6 +35,42 @@ export const PROCEDURE_COLORS = {
     block:
       "bg-gray-50 border-gray-300 text-gray-950 dark:bg-gray-500/15 dark:border-gray-500/40 dark:text-gray-100",
   },
+  RED: {
+    label: "Vermelho claro",
+    swatch: "bg-red-200",
+    block:
+      "bg-red-50 border-red-300 text-red-950 dark:bg-red-500/15 dark:border-red-500/40 dark:text-red-100",
+  },
+  YELLOW: {
+    label: "Amarelo claro",
+    swatch: "bg-yellow-200",
+    block:
+      "bg-yellow-50 border-yellow-300 text-yellow-950 dark:bg-yellow-500/15 dark:border-yellow-500/40 dark:text-yellow-100",
+  },
+  TEAL: {
+    label: "Verde-azulado",
+    swatch: "bg-teal-200",
+    block:
+      "bg-teal-50 border-teal-300 text-teal-950 dark:bg-teal-500/15 dark:border-teal-500/40 dark:text-teal-100",
+  },
+  INDIGO: {
+    label: "Índigo claro",
+    swatch: "bg-indigo-200",
+    block:
+      "bg-indigo-50 border-indigo-300 text-indigo-950 dark:bg-indigo-500/15 dark:border-indigo-500/40 dark:text-indigo-100",
+  },
+  LIME: {
+    label: "Verde-limão",
+    swatch: "bg-lime-200",
+    block:
+      "bg-lime-50 border-lime-300 text-lime-950 dark:bg-lime-500/15 dark:border-lime-500/40 dark:text-lime-100",
+  },
+  CYAN: {
+    label: "Ciano claro",
+    swatch: "bg-cyan-200",
+    block:
+      "bg-cyan-50 border-cyan-300 text-cyan-950 dark:bg-cyan-500/15 dark:border-cyan-500/40 dark:text-cyan-100",
+  },
 } as const;
 
 export type ProcedureColorKey = keyof typeof PROCEDURE_COLORS;
