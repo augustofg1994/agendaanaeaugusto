@@ -17,9 +17,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   cancelAppointment,
   completeAppointment,
   confirmPendingAppointment,
+  deleteAppointment,
   rescheduleAppointment,
 } from "@/server/actions/appointments";
 import { localInputToISOString } from "@/lib/datetime-local";
@@ -51,6 +63,7 @@ export function AppointmentDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"view" | "reschedule" | "cancel">("view");
 
@@ -112,6 +125,18 @@ export function AppointmentDetailDialog({
     });
   }
 
+  function handleDelete() {
+    startDeleteTransition(async () => {
+      const result = await deleteAppointment(appointment.id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Atendimento excluído.");
+      onOpenChange(false);
+    });
+  }
+
   return (
     <Dialog
       open={open}
@@ -154,6 +179,42 @@ export function AppointmentDetailDialog({
                     {isPending ? "Salvando..." : "Confirmar retorno"}
                   </Button>
                 )}
+              </DialogFooter>
+            )}
+            {canManage && appointment.status === "COMPLETED" && (
+              <DialogFooter className="!mx-0 !mb-0 !mt-2 !rounded-none !border-0 !bg-transparent !p-0">
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        Excluir atendimento
+                      </Button>
+                    }
+                  />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir este atendimento?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso remove permanentemente esta consulta de <strong>{appointment.patientName}</strong>{" "}
+                        do histórico. Essa ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Voltar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Excluindo..." : "Excluir permanentemente"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </DialogFooter>
             )}
           </div>
