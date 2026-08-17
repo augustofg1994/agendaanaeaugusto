@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getPatientWithHistory } from "@/server/queries/patients";
+import { listRemindersForPatient } from "@/server/queries/reminders";
 import { formatCpf } from "@/lib/cpf";
 import { formatDateOnlyBR } from "@/lib/date-only";
 import { getAuthSession } from "@/server/auth/session";
 import { getDoctorScope } from "@/server/auth/scope";
 import { AppointmentNotes } from "./appointment-notes";
 import { DeleteAppointmentButton } from "./delete-appointment-button";
+import { CreateReminderDialog } from "./create-reminder-dialog";
+import { ReminderItem } from "../../reminders/reminder-item";
 
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Agendada",
@@ -33,9 +36,10 @@ export default async function PatientDetailPage({
   if (!patient) notFound();
 
   const { doctors } = await getDoctorScope(session);
-  const manageableDoctorIds = new Set(
-    doctors.filter((d) => d.access === "MANAGE").map((d) => d.id)
-  );
+  const manageableDoctors = doctors.filter((d) => d.access === "MANAGE");
+  const manageableDoctorIds = new Set(manageableDoctors.map((d) => d.id));
+
+  const reminders = await listRemindersForPatient(patient.id);
 
   return (
     <div className="space-y-6">
@@ -86,6 +90,35 @@ export default async function PatientDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Pendências</h2>
+          <CreateReminderDialog patientId={patient.id} doctors={manageableDoctors} />
+        </div>
+        {reminders.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma pendência para este paciente.</p>
+        ) : (
+          <div className="space-y-2">
+            {reminders.map((r) => (
+              <ReminderItem
+                key={r.id}
+                reminder={{
+                  id: r.id,
+                  doctorId: r.doctorId,
+                  patientId: r.patientId,
+                  patientName: patient.fullName,
+                  message: r.message,
+                  dueDate: r.dueDate.toISOString(),
+                  status: r.status,
+                  source: r.source,
+                }}
+                canManage={manageableDoctorIds.has(r.doctorId)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="space-y-3">
         <h2 className="text-lg font-medium">Histórico de consultas</h2>

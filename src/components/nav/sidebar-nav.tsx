@@ -10,6 +10,7 @@ import {
   History,
   UserCog,
   Activity,
+  ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Session } from "next-auth";
@@ -19,6 +20,7 @@ const links = [
   { href: "/patients", label: "Pacientes", icon: Users },
   { href: "/procedures", label: "Procedimentos", icon: Stethoscope },
   { href: "/blocked-time", label: "Bloqueios", icon: Lock },
+  { href: "/reminders", label: "Pendências", icon: ListChecks },
   { href: "/follow-ups", label: "Retornos", icon: History },
 ];
 

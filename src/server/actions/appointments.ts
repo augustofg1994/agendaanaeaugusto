@@ -7,6 +7,7 @@ import { assertCanManageDoctorAgenda } from "@/server/auth/authorization";
 import { findConflicts } from "@/server/scheduling/conflicts";
 import { computeEndTime } from "@/server/scheduling/time";
 import { createFollowUpIfApplicable } from "@/server/scheduling/followUp";
+import { deleteConfirmationReminder, upsertConfirmationReminder } from "@/server/scheduling/reminders";
 import {
   cancelAppointmentSchema,
   createAppointmentSchema,
@@ -56,19 +57,23 @@ export async function createAppointment(input: unknown): Promise<ActionResult> {
       return { ok: false, error: conflictMessage(overlappingAppointments, overlappingBlockedTime) };
     }
 
-    await prisma.appointment.create({
-      data: {
-        doctorId: data.doctorId,
-        patientId: data.patientId,
-        procedureTypeId: data.procedureTypeId,
-        startTime,
-        endTime,
-        notes: data.notes || undefined,
-        createdById: session!.user.id,
-      },
+    await prisma.$transaction(async (tx) => {
+      const created = await tx.appointment.create({
+        data: {
+          doctorId: data.doctorId,
+          patientId: data.patientId,
+          procedureTypeId: data.procedureTypeId,
+          startTime,
+          endTime,
+          notes: data.notes || undefined,
+          createdById: session!.user.id,
+        },
+      });
+      await upsertConfirmationReminder(tx, created);
     });
 
     revalidatePath("/agenda/[doctorId]", "page");
+    revalidatePath("/reminders");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: actionErrorMessage(err, "Não foi possível criar a consulta.") };
@@ -106,17 +111,23 @@ export async function rescheduleAppointment(appointmentId: string, input: unknow
       return { ok: false, error: conflictMessage(overlappingAppointments, overlappingBlockedTime) };
     }
 
-    await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        startTime,
-        endTime,
-        // Um retorno sugerido que é remarcado passa a ser um agendamento confirmado.
-        status: appt.status === "PENDING_CONFIRMATION" ? "SCHEDULED" : appt.status,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          startTime,
+          endTime,
+          // Um retorno sugerido que é remarcado passa a ser um agendamento confirmado.
+          status: appt.status === "PENDING_CONFIRMATION" ? "SCHEDULED" : appt.status,
+        },
+      });
+      // Reabre (ou cria) o lembrete de confirmação com o novo horário — remarcar exige
+      // confirmar de novo com o paciente.
+      await upsertConfirmationReminder(tx, { ...appt, startTime });
     });
 
     revalidatePath("/agenda/[doctorId]", "page");
+    revalidatePath("/reminders");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: actionErrorMessage(err, "Não foi possível remarcar a consulta.") };
@@ -131,12 +142,17 @@ export async function cancelAppointment(appointmentId: string, input: unknown): 
     const appt = await prisma.appointment.findUniqueOrThrow({ where: { id: appointmentId } });
     assertCanManageDoctorAgenda(session, appt.doctorId);
 
-    await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: data.reason || undefined },
+    await prisma.$transaction(async (tx) => {
+      await tx.appointment.update({
+        where: { id: appointmentId },
+        data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: data.reason || undefined },
+      });
+      // Consulta cancelada não precisa mais ser confirmada com o paciente.
+      await deleteConfirmationReminder(tx, appointmentId);
     });
 
     revalidatePath("/agenda/[doctorId]", "page");
+    revalidatePath("/reminders");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: actionErrorMessage(err, "Não foi possível cancelar a consulta.") };
@@ -160,6 +176,7 @@ export async function deleteAppointment(appointmentId: string): Promise<ActionRe
 
     revalidatePath("/agenda/[doctorId]", "page");
     revalidatePath("/follow-ups");
+    revalidatePath("/reminders");
     revalidatePath(`/patients/${appt.patientId}`);
     return { ok: true };
   } catch (err) {

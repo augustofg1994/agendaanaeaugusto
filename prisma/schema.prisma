@@ -44,6 +44,16 @@ enum ProcedureColor {
   CYAN
 }
 
+enum ReminderStatus {
+  PENDING
+  RESOLVED
+}
+
+enum ReminderSource {
+  MANUAL
+  AUTO_CONFIRMATION
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -62,8 +72,10 @@ model User {
   performableProcedures ProcedureDoctor[]
   appointmentsAsDoctor  Appointment[]     @relation("DoctorAppointments")
   blockedTimes          BlockedTime[]     @relation("DoctorBlockedTimes")
+  remindersAsDoctor     Reminder[]        @relation("DoctorReminders")
 
   appointmentsCreated Appointment[]         @relation("AppointmentCreatedBy")
+  remindersCreated     Reminder[]           @relation("ReminderCreatedBy")
   passwordResetTokens PasswordResetToken[]
 
   createdAt DateTime @default(now())
@@ -89,6 +101,7 @@ model Patient {
   addressZipCode      String?
 
   appointments Appointment[]
+  reminders    Reminder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -146,6 +159,9 @@ model Appointment {
   cancelledAt  DateTime?
   cancelReason String?
 
+  // Lembrete automático de confirmação (48h antes), quando aplicável — ver model Reminder.
+  reminder Reminder?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -168,6 +184,36 @@ model BlockedTime {
   updatedAt DateTime @updatedAt
 
   @@index([doctorId, startTime])
+}
+
+model Reminder {
+  id       String @id @default(cuid())
+  doctorId String
+  doctor   User   @relation("DoctorReminders", fields: [doctorId], references: [id])
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  // Preenchido apenas para lembretes gerados automaticamente a partir de uma consulta
+  // (ex: confirmação 48h antes). Excluir a consulta remove o lembrete junto (cascade).
+  appointmentId String?      @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  message String
+  dueDate DateTime
+  status  ReminderStatus @default(PENDING)
+  source  ReminderSource @default(MANUAL)
+
+  resolvedAt DateTime?
+
+  createdById String
+  createdBy   User   @relation("ReminderCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([doctorId, dueDate])
+  @@index([patientId])
 }
 
 model PasswordResetToken {
