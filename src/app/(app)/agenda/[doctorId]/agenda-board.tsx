@@ -141,7 +141,7 @@ export function AgendaBoard({
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="min-w-40 text-center text-sm font-semibold capitalize">
+          <span className="min-w-40 text-center text-sm font-semibold capitalize tabular-nums">
             {headerLabel}
           </span>
           <Button

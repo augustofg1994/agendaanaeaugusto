@@ -38,7 +38,7 @@ export function WeekView({
             <div
               key={h}
               style={{ height: GRID_HEIGHT / HOURS_RANGE.length }}
-              className="-translate-y-2 pr-2 text-right text-xs text-muted-foreground"
+              className="-translate-y-2 pr-2 text-right font-mono text-xs tabular-nums text-muted-foreground"
             >
               {String(h).padStart(2, "0")}:00
             </div>
@@ -52,8 +52,8 @@ export function WeekView({
                 day.toDateString() === today.toDateString() && "bg-primary/5 font-medium text-primary"
               )}
             >
-              <span>{format(day, "EEE", { locale: ptBR })}</span>
-              <span>{format(day, "dd/MM")}</span>
+              <span className="tracking-wide">{format(day, "EEE", { locale: ptBR })}</span>
+              <span className="font-mono tabular-nums">{format(day, "dd/MM")}</span>
             </div>
             <DayColumn
               day={day}

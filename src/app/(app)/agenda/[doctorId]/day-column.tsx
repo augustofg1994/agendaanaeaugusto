@@ -115,7 +115,7 @@ export function DayColumn({
             <div
               key={h}
               style={{ height: GRID_HEIGHT / HOURS_RANGE.length }}
-              className="-translate-y-2 pr-2 text-right text-xs text-muted-foreground"
+              className="-translate-y-2 pr-2 text-right font-mono text-xs tabular-nums text-muted-foreground"
             >
               {String(h).padStart(2, "0")}:00
             </div>
@@ -189,7 +189,7 @@ export function DayColumn({
 
         {dragRangeStart && dragRangeEnd && (
           <div
-            className="pointer-events-none absolute left-0.5 right-0.5 z-10 flex items-start justify-center rounded-lg border-2 border-primary bg-primary/15 px-1.5 py-1 text-[0.7rem] font-medium text-primary"
+            className="pointer-events-none absolute left-0.5 right-0.5 z-10 flex items-start justify-center rounded-lg border-2 border-primary bg-primary/15 px-1.5 py-1 font-mono text-[0.7rem] font-medium tabular-nums text-primary"
             style={{
               top: Math.max(pixelsFromDayStart(dragRangeStart), 0),
               height: Math.max(durationPixels(dragRangeStart, dragRangeEnd), 18),

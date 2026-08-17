@@ -78,7 +78,7 @@ export function MonthView({
             >
               <span
                 className={cn(
-                  "text-xs",
+                  "font-mono text-xs tabular-nums",
                   isSameDay(day, today) && "flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground"
                 )}
               >
